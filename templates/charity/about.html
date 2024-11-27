@@ -1,0 +1,48 @@
+{% extends 'charity/base.html' %}
+{% load static %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+    <!-- MAIN CONTENT -->
+    <div class="main-container">
+        <div class="container">
+            {% if about_section %}
+                <div class="row fadeIn animated">
+                    <div class="col-md-6">
+                        <img src="{{ about_section.image.url }}" alt="" class="img-responsive">
+                    </div>
+                    <div class="col-md-6">
+                        <h2 class="title-style-2">{{ about_section.title }} <span class="title-under"></span></h2>
+                        <div class="about-us-content">
+                            {{ about_section.content|safe }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Our Team -->
+            {% if testimonials %}
+                <div class="section-home our-sponsors animate-onscroll fadeIn">
+                    <h2 class="title-style-1">Our Team <span class="title-under"></span></h2>
+                    <div class="row">
+                        {% for testimonial in testimonials %}
+                            <div class="col-md-3 col-sm-6">
+                                <div class="team-member">
+                                    <img src="{{ testimonial.image.url }}" alt="{{ testimonial.name }}" class="img-responsive">
+                                    <div class="team-info">
+                                        <h4>{{ testimonial.name }}</h4>
+                                        {% if testimonial.position %}
+                                            <span class="position">{{ testimonial.position }}</span>
+                                        {% endif %}
+                                        <p>{{ testimonial.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

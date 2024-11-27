@@ -1,0 +1,93 @@
+{% extends 'charity/base.html' %}
+{% load static %}
+
+{% block title %}{{ cause.title }}{% endblock %}
+
+{% block content %}
+    <!-- MAIN CONTENT -->
+    <div class="main-container">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 fadeIn animated">
+                    <h2 class="title-style-2">{{ cause.title }} <span class="title-under"></span></h2>
+
+                    <div class="cause-details">
+                        <div class="cause-img">
+                            <img src="{{ cause.image.url }}" alt="" class="img-responsive">
+                        </div>
+
+                        <div class="progress cause-progress">
+                            <div class="progress-bar" role="progressbar" aria-valuenow="{{ cause.raised_amount|floatformat }}"
+                                 aria-valuemin="0" aria-valuemax="{{ cause.goal_amount|floatformat }}"
+                                 style="width: {% widthratio cause.raised_amount cause.goal_amount 100 %}%;">
+                                {% widthratio cause.raised_amount cause.goal_amount 100 %}%
+                            </div>
+                        </div>
+
+                        <div class="cause-progress-details">
+                            <span>Raised: ${{ cause.raised_amount|floatformat:2 }}</span>
+                            <span>Goal: ${{ cause.goal_amount|floatformat:2 }}</span>
+                        </div>
+
+                        <div class="cause-description">
+                            {{ cause.description|safe }}
+                        </div>
+
+                        <div class="text-center">
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#donateModal">
+                                DONATE NOW
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 fadeIn animated">
+                    <div class="sidebar">
+                        <h2 class="title-style-2">Other Causes <span class="title-under"></span></h2>
+
+                        {% for other_cause in other_causes %}
+                            <div class="cause-item">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h4 class="cause-title">
+                                            <a href="{% url 'cause_detail' other_cause.slug %}">{{ other_cause.title }}</a>
+                                        </h4>
+                                        <div class="cause-details">
+                                            {{ other_cause.description|truncatewords:20|safe }}
+                                        </div>
+                                        <div class="btn-holder text-center">
+                                            <a href="{% url 'cause_detail' other_cause.slug %}" class="btn btn-primary">LEARN MORE</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donate Modal -->
+    <div class="modal fade" id="donateModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Donate to {{ cause.title }}</h4>
+                </div>
+                <div class="modal-body">
+                    <form method="post" action="{% url 'donate' cause.id %}">
+                        {% csrf_token %}
+                        {{ donation_form.as_p }}
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary">Submit Donation</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

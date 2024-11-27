@@ -1,0 +1,271 @@
+{% extends 'charity/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}CALVIN CARES | Home{% endblock %}
+
+{% block content %}
+    <!-- Carousel -->
+    <div id="homeCarousel" class="carousel slide carousel-home" data-ride="carousel">
+        <ol class="carousel-indicators">
+            {% for item in carousel_items %}
+                <li data-target="#homeCarousel" data-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></li>
+            {% endfor %}
+        </ol>
+
+        <div class="carousel-inner" role="listbox">
+            {% for item in carousel_items %}
+                <div class="item {% if forloop.first %}active{% endif %}">
+                    <img src="{{ item.image.url }}" alt="">
+                    <div class="container">
+                        <div class="carousel-caption">
+                            <h2 class="carousel-title bounceInDown animated slow">{{ item.title }}</h2>
+                            <h4 class="carousel-subtitle bounceInUp animated slow">{{ item.subtitle }}</h4>
+                            {% if item.button_text %}
+                                <a href="{{ item.button_url }}" class="btn btn-lg btn-secondary hidden-xs bounceInUp animated slow">
+                                    {{ item.button_text }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <a class="left carousel-control" href="#homeCarousel" role="button" data-slide="prev">
+            <span class="fa fa-angle-left" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="right carousel-control" href="#homeCarousel" role="button" data-slide="next">
+            <span class="fa fa-angle-right" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+
+    <!-- Our Mission -->
+    <div class="section-home about-us">
+        <div class="container">
+            <h2 class="title-style-1">Our Mission <span class="title-under"></span></h2>
+            <div class="row">
+                {% for mission in missions %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="about-us-col">
+                            <div class="img-container">
+                                <img src="{{ mission.image.url }}" alt="{{ mission.title }}">
+                            </div>
+                            <h3>{{ mission.title }}</h3>
+                            <div class="mission-content">
+                                {{ mission.content|safe }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Causes -->
+    <div class="section-home our-causes animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Our Causes <span class="title-under"></span></h2>
+            <div class="row">
+                {% for cause in featured_causes %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="cause">
+                            <img src="{{ cause.image.url }}" alt="" class="cause-img">
+                            <div class="progress cause-progress">
+                                <div class="progress-bar" role="progressbar" aria-valuenow="{{ cause.raised_amount|floatformat }}"
+                                     aria-valuemin="0" aria-valuemax="{{ cause.goal_amount|floatformat }}"
+                                     style="width: {% widthratio cause.raised_amount cause.goal_amount 100 %}%;">
+                                    {% widthratio cause.raised_amount cause.goal_amount 100 %}%
+                                </div>
+                            </div>
+                            <h4 class="cause-title"><a href="{% url 'cause_detail' cause.slug %}">{{ cause.title }}</a></h4>
+                            <div class="cause-details">
+                                {{ cause.description|truncatewords:30|safe }}
+                            </div>
+                            <div class="btn-holder text-center">
+                                <a href="{% url 'cause_detail' cause.slug %}" class="btn btn-primary">LEARN MORE</a>
+                                <button type="button" class="btn btn-success" data-toggle="modal" data-target="#donateModal{{ cause.id }}">
+                                    DONATE NOW
+                                </button>
+                            </div>
+                            <div class="cause-progress-details">
+                                <span>Raised: ${{ cause.raised_amount|floatformat:2 }}</span>
+                                <span>Goal: ${{ cause.goal_amount|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Donate Modal for each cause -->
+                    <div class="modal fade" id="donateModal{{ cause.id }}" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                    <h4 class="modal-title">Donate to {{ cause.title }}</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="post" action="{% url 'donate' cause.id %}">
+                                        {% csrf_token %}
+                                        {{ donation_form|crispy }}
+                                        <div class="form-group text-center">
+                                            <button type="submit" class="btn btn-primary">Submit Donation</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Programs -->
+    <div class="section-home our-causes animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Our Programs <span class="title-under"></span></h2>
+            <div class="row">
+                {% for program in featured_programs %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="about-us-col">
+                            <div class="img-container">
+                                <img src="{{ program.image.url }}" alt="{{ program.title }}">
+                            </div>
+                            <h3 class="col-icon">
+                                <i class="fa fa-heart"></i> {{ program.title }}
+                            </h3>
+                            <div class="program-content">
+                                {{ program.description|safe }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Reasons -->
+    <div class="section-home reasons animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Reasons to help <span class="title-under"></span></h2>
+            <div class="row">
+                {% for reason in reasons %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="reasons-col animate-onscroll fadeIn">
+                            {% if reason.video_url %}
+                                <div class="video-container">
+                                    <iframe src="{{ reason.get_video_embed_url }}" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen>
+                                    </iframe>
+                                </div>
+                            {% elif reason.video_file %}
+                                <div class="video-container">
+                                    <video width="100%" controls>
+                                        <source src="{{ reason.video_file.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            {% elif reason.image %}
+                                <img src="{{ reason.image.url }}" alt="">
+                            {% endif %}
+                            <h3>{{ reason.title }}</h3>
+                            <p>{{ reason.description|safe }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Help & Support -->
+    <div class="section-home help-support animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Help & Support <span class="title-under"></span></h2>
+            <div class="row">
+                {% for help in help_support %}
+                    <div class="col-md-6">
+                        <div class="about-us-col help-support-item">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    {% if help.image %}
+                                        <div class="img-container">
+                                            <img src="{{ help.image.url }}" alt="{{ help.title }}">
+                                        </div>
+                                    {% endif %}
+                                    <div class="icon-container">
+                                        <i class="fa {{ help.icon }} fa-3x"></i>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <h3 class="col-icon">{{ help.title }}</h3>
+                                    <div class="help-content">
+                                        {{ help.content|safe }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if forloop.counter|divisibleby:2 %}
+                        </div><div class="row">
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Events -->
+    <div class="section-home our-causes animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Upcoming Events <span class="title-under"></span></h2>
+            <div class="row">
+                {% for event in featured_events %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="cause">
+                            <img src="{{ event.image.url }}" alt="" class="cause-img">
+                            <h4 class="cause-title"><a href="{% url 'event_detail' event.slug %}">{{ event.title }}</a></h4>
+                            <div class="cause-details">
+                                {{ event.description|truncatewords:30|safe }}
+                            </div>
+                            <div class="btn-holder text-center">
+                                <a href="{% url 'event_detail' event.slug %}" class="btn btn-primary">LEARN MORE</a>
+                            </div>
+                            <div class="cause-progress-details">
+                                <span>Date: {{ event.date|date:"F d, Y" }}</span>
+                                <span>Location: {{ event.location }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonials -->
+    {% if testimonials %}
+    <div class="section-home our-sponsors animate-onscroll fadeIn">
+        <div class="container">
+            <h2 class="title-style-1">Our Testimonials <span class="title-under"></span></h2>
+            <div class="row">
+                {% for testimonial in testimonials %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="sponsor-box">
+                            <img src="{{ testimonial.image.url }}" alt="{{ testimonial.name }}">
+                            <h4>{{ testimonial.name }}</h4>
+                            {% if testimonial.position %}
+                                <p class="sponsor-position">{{ testimonial.position }}</p>
+                            {% endif %}
+                            <p>{{ testimonial.content }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

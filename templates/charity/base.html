@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %}</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Favicon -->
+    {% if site_settings.favicon %}
+    <link rel="shortcut icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
+    <!-- Google Fonts -->
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Dosis:400,700' rel='stylesheet' type='text/css'>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{% static 'assets/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/font-awesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+
+    <!-- Modernizr -->
+    <script src="{% static 'assets/js/modernizr-2.6.2.min.js' %}"></script>
+
+    {% if site_settings.google_analytics_id %}
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.google_analytics_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.google_analytics_id }}');
+    </script>
+    {% endif %}
+</head>
+<body>
+    <!-- NAVBAR -->
+    <header class="main-header">
+        <nav class="navbar navbar-static-top">
+            <div class="navbar-top">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm-6 col-xs-12">
+                            {% if site_settings %}
+                            <ul class="list-unstyled list-inline header-contact">
+                                <li><i class="fa fa-phone"></i> {{ site_settings.phone }}</li>
+                                <li><i class="fa fa-envelope"></i> {{ site_settings.email }}</li>
+                            </ul>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6 col-xs-12 text-right">
+                            <ul class="list-unstyled list-inline header-social">
+                                {% for link in social_links %}
+                                <li><a href="{{ link.url }}" target="_blank"><i class="fa {{ link.icon_class }}"></i></a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="navbar-main">
+                <div class="container">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                            <span class="sr-only">Toggle navigation</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a class="navbar-brand" href="{% url 'index' %}">CALVIN CARES</a>
+                    </div>
+
+                    <div id="navbar" class="navbar-collapse collapse pull-right">
+                        <ul class="nav navbar-nav">
+                            <li><a {% if request.path == '/' %}class="is-active"{% endif %} href="{% url 'index' %}">HOME</a></li>
+                            <li><a {% if 'about' in request.path %}class="is-active"{% endif %} href="{% url 'about' %}">ABOUT</a></li>
+                            <li><a {% if 'causes' in request.path %}class="is-active"{% endif %} href="{% url 'causes' %}">CAUSES</a></li>
+                            <li><a {% if 'gallery' in request.path %}class="is-active"{% endif %} href="{% url 'gallery' %}">GALLERY</a></li>
+                            <li><a {% if 'contact' in request.path %}class="is-active"{% endif %} href="{% url 'contact' %}">CONTACT</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <!-- /NAVBAR -->
+
+    {% if messages %}
+    <div class="container">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %} alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+        <div class="footer-top">
+        </div>
+
+        <div class="footer-main">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="footer-col">
+                            <h4 class="footer-title">About us</h4>
+                            {% if site_settings %}
+                            <div class="footer-content">
+                                {{ site_settings.site_description|safe }}
+                                <p>
+                                    {{ site_settings.address|linebreaks }}
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="footer-col">
+                            <h4 class="footer-title">TWITTER FEED</h4>
+                            {% if site_settings.twitter_widget_id %}
+                            <div class="footer-content">
+                                <a class="twitter-timeline" data-height="300" href="https://twitter.com/{{ site_settings.twitter_widget_id }}">
+                                    Tweets
+                                </a>
+                                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="footer-col">
+                            <h4 class="footer-title">Contact us</h4>
+                            <div class="footer-content">
+                                {% if site_settings %}
+                                <ul class="list-unstyled footer-contact">
+                                    <li><i class="fa fa-map-marker"></i> {{ site_settings.address|linebreaks }}</li>
+                                    <li><i class="fa fa-phone"></i> {{ site_settings.phone }}</li>
+                                    <li><i class="fa fa-envelope"></i> {{ site_settings.email }}</li>
+                                </ul>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container text-right">
+                &copy; CALVIN CARES {% now "Y" %}, All rights reserved
+            </div>
+        </div>
+    </footer>
+    <!-- /FOOTER -->
+
+    <!-- Scripts -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="{% static "assets/js/jquery-1.11.1.min.js" %}"><\/script>')</script>
+    <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

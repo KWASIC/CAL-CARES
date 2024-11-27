@@ -1,0 +1,66 @@
+{% extends 'charity/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Contact Us{% endblock %}
+
+{% block content %}
+    <!-- MAIN CONTENT -->
+    <div class="main-container">
+        <div class="container">
+            <div class="row fadeIn animated">
+                <div class="col-md-7">
+                    <h2 class="title-style-2">CONTACT FORM <span class="title-under"></span></h2>
+
+                    <form method="post" class="contact-form">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary pull-right">Send message</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-md-4 col-md-offset-1">
+                    <h2 class="title-style-2">CONTACT INFORMATION <span class="title-under"></span></h2>
+                    <div class="contact-items">
+                        {% if site_settings.address %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fa fa-map-marker"></i>
+                                </div>
+                                <div class="contact-text">{{ site_settings.address|linebreaks }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% if site_settings.phone %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fa fa-phone"></i>
+                                </div>
+                                <div class="contact-text">{{ site_settings.phone }}</div>
+                            </div>
+                        {% endif %}
+
+                        {% if site_settings.email %}
+                            <div class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="fa fa-envelope"></i>
+                                </div>
+                                <div class="contact-text">{{ site_settings.email }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if site_settings.google_maps_embed %}
+        <div id="contact-map" class="contact-map">
+            {{ site_settings.google_maps_embed|safe }}
+        </div>
+    {% endif %}
+{% endblock %}
