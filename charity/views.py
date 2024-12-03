@@ -1,13 +1,17 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView
+from django.http import JsonResponse
 from django.contrib import messages
+from django.urls import reverse
 from django.db.models import Sum
 from django.core.paginator import Paginator
 from .models import (
     Cause, Event, GalleryImage, HomeCarousel, 
-    AboutSection, Reason, Testimonial, Mission, Program, HelpSupport
+    AboutSection, Reason, Testimonial, Mission, Program, HelpSupport, Donation
 )
 from .forms import ContactForm, DonationForm
+from .utils.payment import PaystackAPI
+import uuid
 
 def index(request):
     context = {
@@ -142,3 +146,160 @@ class GalleryListView(ListView):
     template_name = 'charity/gallery.html'
     context_object_name = 'images'
     paginate_by = 12
+
+def process_donation(request, cause_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        cause = get_object_or_404(Cause, id=cause_id)
+        amount = float(request.POST.get('amount'))
+        email = request.POST.get('email')
+        name = request.POST.get('name')
+        message = request.POST.get('message', '')
+        anonymous = request.POST.get('anonymous') == 'on'
+        
+        # Generate unique reference
+        reference = f"don_{uuid.uuid4().hex[:10]}"
+        
+        # Create donation record
+        donation = Donation.objects.create(
+            cause=cause,
+            name=name,
+            email=email,
+            amount=amount,
+            message=message,
+            anonymous=anonymous,
+            payment_reference=reference,
+            status='pending'
+        )
+        
+        # Initialize Paystack payment
+        paystack = PaystackAPI()
+        callback_url = request.build_absolute_uri(
+            reverse('verify_donation', args=[donation.id])
+        )
+        
+        try:
+            payment_url = paystack.get_payment_url(
+                email=email,
+                amount=amount,
+                reference=reference,
+                callback_url=callback_url
+            )
+            return JsonResponse({
+                'status': 'success',
+                'payment_url': payment_url
+            })
+        except Exception as e:
+            donation.status = 'failed'
+            donation.save()
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+            
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+def initiate_donation(request, cause_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    try:
+        cause = Cause.objects.get(id=cause_id)
+        amount = float(request.POST.get('amount'))
+        email = request.POST.get('email')
+        name = request.POST.get('name')
+        
+        # Generate unique reference
+        reference = f"don_{uuid.uuid4().hex[:10]}"
+        
+        # Save pending donation
+        donation = Donation.objects.create(
+            cause=cause,
+            name=name,
+            email=email,
+            amount=amount,
+            payment_reference=reference,
+            status='pending'
+        )
+        
+        # Initialize Paystack payment
+        paystack = PaystackAPI()
+        callback_url = request.build_absolute_uri(
+            reverse('verify_donation', args=[donation.id])
+        )
+        
+        try:
+            payment_url = paystack.get_payment_url(
+                email=email,
+                amount=amount,
+                reference=reference,
+                callback_url=callback_url
+            )
+            return JsonResponse({
+                'status': 'success',
+                'payment_url': payment_url
+            })
+        except Exception as e:
+            donation.status = 'failed'
+            donation.save()
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+            
+    except Cause.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Cause not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+def verify_donation(request, donation_id):
+    try:
+        donation = get_object_or_404(Donation, id=donation_id)
+        
+        # Only verify pending donations
+        if donation.status != 'pending':
+            messages.warning(request, 'This donation has already been processed')
+            return redirect('cause_detail', slug=donation.cause.slug)
+            
+        paystack = PaystackAPI()
+        
+        # Verify the payment
+        try:
+            response = paystack.verify_payment(donation.payment_reference)
+            
+            if response['status'] and response['data']['status'] == 'success':
+                # Update donation status
+                donation.status = 'completed'
+                donation.save()
+                
+                messages.success(request, 'Thank you for your donation!')
+            else:
+                donation.status = 'failed'
+                donation.save()
+                messages.error(request, 'Payment verification failed')
+                
+        except Exception as e:
+            donation.status = 'failed'
+            donation.save()
+            messages.error(request, str(e))
+            
+        return redirect('cause_detail', slug=donation.cause.slug)
+        
+    except Donation.DoesNotExist:
+        messages.error(request, 'Donation not found')
+        return redirect('home')
+    except Exception as e:
+        messages.error(request, str(e))
+        return redirect('home')

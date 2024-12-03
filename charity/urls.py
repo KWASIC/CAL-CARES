@@ -9,4 +9,7 @@ urlpatterns = [
     path('contact/', views.contact, name='contact'),
     path('gallery/', views.gallery, name='gallery'),
     path('donate/<int:cause_id>/', views.donate, name='donate'),
+    path('donate/<int:cause_id>/initiate/', views.initiate_donation, name='initiate_donation'),
+    path('donate/<int:cause_id>/process/', views.process_donation, name='process_donation'),
+    path('donate/<int:donation_id>/verify/', views.verify_donation, name='verify_donation'),
 ]

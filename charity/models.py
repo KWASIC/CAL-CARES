@@ -81,19 +81,28 @@ class ContactMessage(models.Model):
         return f"{self.name} - {self.subject}"
 
 class Donation(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed')
+    ]
+    
     cause = models.ForeignKey(Cause, on_delete=models.CASCADE, related_name='donations')
     name = models.CharField(max_length=100)
     email = models.EmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     message = models.TextField(blank=True)
     anonymous = models.BooleanField(default=False)
+    payment_reference = models.CharField(max_length=100, unique=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.name} - ${self.amount}"
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # Only update cause amount on new donations
+        if self.status == 'completed' and not self.pk:
             self.cause.raised_amount += self.amount
             self.cause.save()
         super().save(*args, **kwargs)

@@ -4,6 +4,10 @@ Django settings for sadaka_project project.
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,13 +27,16 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles',  
     'charity.apps.CharityConfig',
-    'ckeditor',
     'crispy_forms',
     'crispy_bootstrap4',
-    'whitenoise',  # Add this line
+    'ckeditor',
+    'whitenoise',  
 ]
+
+if DEBUG:
+    pass
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -100,6 +107,9 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+if DEBUG:
+    STATICFILES_DIRS += [os.path.join(BASE_DIR, 'media')]
+
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Media files
@@ -113,6 +123,13 @@ SECURE_SSL_REDIRECT = False  # Set to True if you have SSL configured
 SECURE_HSTS_SECONDS = 0  # Set to appropriate value if you have SSL
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # Set to True if you have SSL
 SECURE_HSTS_PRELOAD = False  # Set to True if you have SSL
+
+# Payment API Key
+PAYMENT_API_KEY = os.getenv('PAYMENT_API_KEY')
+
+# Paystack Settings
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 
 # Crispy Forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
