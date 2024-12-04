@@ -150,6 +150,10 @@ class GalleryListView(ListView):
 def process_donation(request, cause_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    # Ensure CSRF cookie is set
+    from django.views.decorators.csrf import ensure_csrf_cookie
+    ensure_csrf_cookie(request)
         
     try:
         cause = get_object_or_404(Cause, id=cause_id)
