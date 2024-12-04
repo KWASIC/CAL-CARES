@@ -12,6 +12,8 @@ from .models import (
 from .forms import ContactForm, DonationForm
 from .utils.payment import PaystackAPI
 import uuid
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
 
 def index(request):
     context = {
@@ -137,14 +139,9 @@ class GalleryListView(ListView):
     context_object_name = 'images'
     paginate_by = 12
 
+@require_http_methods(["POST"])
+@ensure_csrf_cookie
 def process_donation(request, cause_id):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-    # Ensure CSRF cookie is set
-    from django.views.decorators.csrf import ensure_csrf_cookie
-    ensure_csrf_cookie(request)
-        
     try:
         cause = get_object_or_404(Cause, id=cause_id)
         amount = float(request.POST.get('amount'))
