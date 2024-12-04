@@ -14,6 +14,7 @@ from .utils.payment import PaystackAPI
 import uuid
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
+from datetime import datetime
 
 def index(request):
     context = {
@@ -178,8 +179,9 @@ def process_donation(request, cause_id):
                 'message': 'Please enter your name'
             }, status=400)
         
-        # Generate unique reference
-        reference = f"don_{uuid.uuid4().hex[:10]}"
+        # Generate reference that matches Paystack pattern
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        reference = f"CAL-{timestamp}-{uuid.uuid4().hex[:8]}"
         
         try:
             # Create donation record
@@ -207,19 +209,19 @@ def process_donation(request, cause_id):
                 reverse('verify_donation', args=[donation.id])
             )
             
-            payment_url = paystack.get_payment_url(
+            response = paystack.initialize_payment(
                 email=email,
                 amount=amount,
                 reference=reference,
                 callback_url=callback_url
             )
             
-            if not payment_url:
-                raise ValueError('Invalid payment URL received from Paystack')
+            if not response or 'data' not in response or 'authorization_url' not in response['data']:
+                raise ValueError('Invalid response from Paystack')
                 
             return JsonResponse({
                 'status': 'success',
-                'payment_url': payment_url
+                'payment_url': response['data']['authorization_url']
             })
             
         except Exception as e:
@@ -249,7 +251,8 @@ def initiate_donation(request, cause_id):
         name = request.POST.get('name')
         
         # Generate unique reference
-        reference = f"don_{uuid.uuid4().hex[:10]}"
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        reference = f"CAL-{timestamp}-{uuid.uuid4().hex[:8]}"
         
         # Save pending donation
         donation = Donation.objects.create(
@@ -268,15 +271,17 @@ def initiate_donation(request, cause_id):
         )
         
         try:
-            payment_url = paystack.get_payment_url(
+            response = paystack.initialize_payment(
                 email=email,
                 amount=amount,
                 reference=reference,
                 callback_url=callback_url
             )
+            if not response or 'data' not in response or 'authorization_url' not in response['data']:
+                raise ValueError('Invalid response from Paystack')
             return JsonResponse({
                 'status': 'success',
-                'payment_url': payment_url
+                'payment_url': response['data']['authorization_url']
             })
         except Exception as e:
             donation.status = 'failed'
