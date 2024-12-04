@@ -79,6 +79,7 @@
                     <h4 class="modal-title">Donate to {{ cause.title }}</h4>
                 </div>
                 <div class="modal-body">
+                    <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
                     <form id="donationForm" method="post" action="{% url 'process_donation' cause.id %}">
                         {% csrf_token %}
                         {{ donation_form.as_p }}
@@ -109,17 +110,34 @@ function getCookie(name) {
     return cookieValue;
 }
 
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('donationForm');
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Hide any previous error messages
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+            
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Processing...';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing...';
             
             const formData = new FormData(this);
             const csrftoken = getCookie('csrftoken');
@@ -135,21 +153,22 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Network response was not ok');
+                    });
                 }
                 return response.json();
             })
             .then(data => {
-                if (data.status === 'success') {
+                if (data.status === 'success' && data.payment_url) {
                     window.location.href = data.payment_url;
                 } else {
-                    throw new Error(data.message || 'An error occurred');
+                    throw new Error(data.message || 'Invalid response from server');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert(error.message || 'An error occurred. Please try again.');
-                // Reset button state
+                showError(error.message || 'An error occurred. Please try again.');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             });
@@ -157,9 +176,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Close modal on successful form submission
+// Reset form and error message when modal is closed
 $('#donateModal').on('hidden.bs.modal', function () {
     const form = document.getElementById('donationForm');
+    const errorDiv = document.getElementById('errorMessage');
     if (form) {
         form.reset();
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -167,6 +187,9 @@ $('#donateModal').on('hidden.bs.modal', function () {
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Submit Donation';
         }
+    }
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
     }
 });
 </script>

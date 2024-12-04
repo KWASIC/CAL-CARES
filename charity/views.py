@@ -143,16 +143,20 @@ class GalleryListView(ListView):
 @ensure_csrf_cookie
 def process_donation(request, cause_id):
     try:
-        # Log request details for debugging
-        print(f"Processing donation for cause {cause_id}")
-        print(f"Request method: {request.method}")
-        print(f"Headers: {request.headers}")
-        
         cause = get_object_or_404(Cause, id=cause_id)
-        amount = float(request.POST.get('amount', 0))
-        email = request.POST.get('email', '')
-        name = request.POST.get('name', '')
-        message = request.POST.get('message', '')
+        
+        # Get form data with default values
+        try:
+            amount = float(request.POST.get('amount', 0))
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please enter a valid amount'
+            }, status=400)
+            
+        email = request.POST.get('email', '').strip()
+        name = request.POST.get('name', '').strip()
+        message = request.POST.get('message', '').strip()
         anonymous = request.POST.get('anonymous') == 'on'
         
         # Validate required fields
@@ -177,35 +181,47 @@ def process_donation(request, cause_id):
         # Generate unique reference
         reference = f"don_{uuid.uuid4().hex[:10]}"
         
-        # Create donation record
-        donation = Donation.objects.create(
-            cause=cause,
-            name=name,
-            email=email,
-            amount=amount,
-            message=message,
-            anonymous=anonymous,
-            payment_reference=reference,
-            status='pending'
-        )
-        
-        # Initialize Paystack payment
-        paystack = PaystackAPI()
-        callback_url = request.build_absolute_uri(
-            reverse('verify_donation', args=[donation.id])
-        )
+        try:
+            # Create donation record
+            donation = Donation.objects.create(
+                cause=cause,
+                name=name,
+                email=email,
+                amount=amount,
+                message=message,
+                anonymous=anonymous,
+                payment_reference=reference,
+                status='pending'
+            )
+        except Exception as e:
+            print(f"Database error: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Unable to create donation record. Please try again.'
+            }, status=500)
         
         try:
+            # Initialize Paystack payment
+            paystack = PaystackAPI()
+            callback_url = request.build_absolute_uri(
+                reverse('verify_donation', args=[donation.id])
+            )
+            
             payment_url = paystack.get_payment_url(
                 email=email,
                 amount=amount,
                 reference=reference,
                 callback_url=callback_url
             )
+            
+            if not payment_url:
+                raise ValueError('Invalid payment URL received from Paystack')
+                
             return JsonResponse({
                 'status': 'success',
                 'payment_url': payment_url
             })
+            
         except Exception as e:
             print(f"Paystack error: {str(e)}")
             donation.status = 'failed'
