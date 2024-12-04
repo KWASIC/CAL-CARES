@@ -143,12 +143,36 @@ class GalleryListView(ListView):
 @ensure_csrf_cookie
 def process_donation(request, cause_id):
     try:
+        # Log request details for debugging
+        print(f"Processing donation for cause {cause_id}")
+        print(f"Request method: {request.method}")
+        print(f"Headers: {request.headers}")
+        
         cause = get_object_or_404(Cause, id=cause_id)
-        amount = float(request.POST.get('amount'))
-        email = request.POST.get('email')
-        name = request.POST.get('name')
+        amount = float(request.POST.get('amount', 0))
+        email = request.POST.get('email', '')
+        name = request.POST.get('name', '')
         message = request.POST.get('message', '')
         anonymous = request.POST.get('anonymous') == 'on'
+        
+        # Validate required fields
+        if not amount or amount <= 0:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please enter a valid amount'
+            }, status=400)
+            
+        if not email:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please enter your email address'
+            }, status=400)
+            
+        if not name:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please enter your name'
+            }, status=400)
         
         # Generate unique reference
         reference = f"don_{uuid.uuid4().hex[:10]}"
@@ -183,17 +207,19 @@ def process_donation(request, cause_id):
                 'payment_url': payment_url
             })
         except Exception as e:
+            print(f"Paystack error: {str(e)}")
             donation.status = 'failed'
             donation.save()
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
+                'message': 'Unable to initialize payment. Please try again.'
             }, status=400)
             
     except Exception as e:
+        print(f"Process donation error: {str(e)}")
         return JsonResponse({
             'status': 'error',
-            'message': str(e)
+            'message': 'An unexpected error occurred. Please try again.'
         }, status=500)
 
 def initiate_donation(request, cause_id):

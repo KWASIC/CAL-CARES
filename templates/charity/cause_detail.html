@@ -109,33 +109,65 @@ function getCookie(name) {
     return cookieValue;
 }
 
-document.getElementById('donationForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const csrftoken = getCookie('csrftoken');
-    
-    fetch(this.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrftoken
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            window.location.href = data.payment_url;
-        } else {
-            alert(data.message || 'An error occurred. Please try again.');
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('donationForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Processing...';
+            
+            const formData = new FormData(this);
+            const csrftoken = getCookie('csrftoken');
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = data.payment_url;
+                } else {
+                    throw new Error(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred. Please try again.');
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+    }
+});
+
+// Close modal on successful form submission
+$('#donateModal').on('hidden.bs.modal', function () {
+    const form = document.getElementById('donationForm');
+    if (form) {
+        form.reset();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Donation';
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
+    }
 });
 </script>
 {% endblock %}
