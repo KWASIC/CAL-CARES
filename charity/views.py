@@ -88,16 +88,18 @@ def gallery(request):
     }
     return render(request, 'charity/gallery.html', context)
 
-def donate(request, cause_id):
-    cause = get_object_or_404(Cause, id=cause_id)
+def donate(request, cause_id=None, slug=None):
+    if slug:
+        cause = get_object_or_404(Cause, slug=slug)
+    else:
+        cause = get_object_or_404(Cause, id=cause_id)
+        
     if request.method == 'POST':
         form = DonationForm(request.POST)
         if form.is_valid():
             donation = form.save(commit=False)
             donation.cause = cause
             donation.save()
-            cause.raised_amount += donation.amount
-            cause.save()
             messages.success(request, 'Thank you for your donation!')
             return redirect('cause_detail', slug=cause.slug)
     return redirect('cause_detail', slug=cause.slug)
@@ -117,18 +119,6 @@ class CauseDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['donation_form'] = DonationForm()
         return context
-
-def donate(request, slug):
-    cause = get_object_or_404(Cause, slug=slug)
-    if request.method == 'POST':
-        form = DonationForm(request.POST)
-        if form.is_valid():
-            donation = form.save(commit=False)
-            donation.cause = cause
-            donation.save()
-            messages.success(request, 'Thank you for your donation!')
-            return redirect('cause_detail', slug=slug)
-    return redirect('cause_detail', slug=slug)
 
 class EventListView(ListView):
     model = Event
