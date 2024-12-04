@@ -179,9 +179,10 @@ def process_donation(request, cause_id):
                 'message': 'Please enter your name'
             }, status=400)
         
-        # Generate reference that matches Paystack pattern
+        # Generate reference that matches Paystack pattern (alphanumeric)
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        reference = f"CAL-{timestamp}-{uuid.uuid4().hex[:8]}"
+        random_str = ''.join(c for c in uuid.uuid4().hex[:8] if c.isalnum())
+        reference = f"CAL{timestamp}{random_str}".upper()
         
         try:
             # Create donation record
@@ -216,8 +217,11 @@ def process_donation(request, cause_id):
                 callback_url=callback_url
             )
             
-            if not response or 'data' not in response or 'authorization_url' not in response['data']:
-                raise ValueError('Invalid response from Paystack')
+            if not response or 'status' not in response or not response['status']:
+                raise ValueError(f'Payment initialization failed: {response.get("message", "Unknown error")}')
+            
+            if 'data' not in response or 'authorization_url' not in response['data']:
+                raise ValueError('Invalid response structure from Paystack')
                 
             return JsonResponse({
                 'status': 'success',

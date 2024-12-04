@@ -12,7 +12,7 @@ class PaystackAPI:
         
         Args:
             email: Customer's email
-            amount: Amount in kobo (multiply Naira amount by 100)
+            amount: Amount in Naira (will be converted to kobo)
             reference: Unique transaction reference
             callback_url: URL to redirect to after payment
         """
@@ -21,10 +21,15 @@ class PaystackAPI:
             "Content-Type": "application/json"
         }
         
+        # Convert amount to kobo (multiply by 100)
+        amount_in_kobo = int(Decimal(str(amount)) * 100)
+        
         data = {
             "email": email,
-            "amount": int(amount * 100),  # Convert to kobo
-            "callback_url": callback_url
+            "amount": amount_in_kobo,
+            "currency": "NGN",
+            "callback_url": callback_url,
+            "channels": ["card", "bank", "ussd", "qr", "mobile_money", "bank_transfer"]
         }
         
         if reference:
@@ -39,6 +44,9 @@ class PaystackAPI:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
+            print(f"Paystack API Error: {str(e)}")
+            if hasattr(e.response, 'json'):
+                print(f"Paystack Error Response: {e.response.json()}")
             raise Exception(f"Payment initialization failed: {str(e)}")
             
     def verify_payment(self, reference):
@@ -56,6 +64,9 @@ class PaystackAPI:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
+            print(f"Paystack API Error: {str(e)}")
+            if hasattr(e.response, 'json'):
+                print(f"Paystack Error Response: {e.response.json()}")
             raise Exception(f"Payment verification failed: {str(e)}")
             
     def get_payment_url(self, email, amount, reference=None, callback_url=None):
